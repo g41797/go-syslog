@@ -1,4 +1,4 @@
-module github.com/g41797/go-syslog.v2
+module github.com/g41797/go-syslog
 
 go 1.19
 

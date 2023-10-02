@@ -1,7 +1,7 @@
 package syslog
 
 import (
-	"github.com/g41797/go-syslog.v2/format"
+	"github.com/g41797/go-syslog/format"
 	. "gopkg.in/check.v1"
 )
 
