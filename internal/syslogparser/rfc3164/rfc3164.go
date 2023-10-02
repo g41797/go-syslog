@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"gopkg.in/mcuadros/go-syslog.v2/internal/syslogparser"
+	"github.com/g41797/go-syslog.v2/internal/syslogparser"
 )
 
 type Parser struct {
@@ -48,7 +48,7 @@ func (p *Parser) Parse() error {
 	pri, err := p.parsePriority()
 	if err != nil {
 		// RFC3164 sec 4.3.3
-		p.priority = syslogparser.Priority{13, syslogparser.Facility{Value: 1}, syslogparser.Severity{Value: 5}}
+		p.priority = syslogparser.Priority{P: 13, F: syslogparser.Facility{Value: 1}, S: syslogparser.Severity{Value: 5}}
 		p.cursor = tcursor
 		content, err := p.parseContent()
 		p.header.timestamp = time.Now().Round(time.Second)

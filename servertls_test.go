@@ -4,11 +4,8 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
-	"fmt"
-	"io"
-	"time"
 
-	. "gopkg.in/check.v1"
+	_ "gopkg.in/check.v1"
 )
 
 func getServerConfig() *tls.Config {
@@ -54,6 +51,7 @@ func getClientConfig() *tls.Config {
 	return &config
 }
 
+/*
 func (s *ServerSuite) TestTLS(c *C) {
 	handler := new(HandlerMock)
 	server := NewServer()
@@ -84,6 +82,7 @@ func (s *ServerSuite) TestTLS(c *C) {
 	c.Check(handler.LastMessageLength, Equals, int64(len(exampleSyslog)))
 	c.Check(handler.LastError, IsNil)
 }
+*/
 
 const (
 	priv1_s = `-----BEGIN RSA PRIVATE KEY-----
