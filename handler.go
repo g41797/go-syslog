@@ -6,7 +6,7 @@ import (
 
 // The handler receive every syslog entry at Handle method
 type Handler interface {
-	Handle([]byte, format.LogParts, int64, error)
+	Handle(format.LogParts, int64, error)
 }
 
 type LogPartsChannel chan format.LogParts
@@ -30,6 +30,6 @@ func (h *ChannelHandler) SetChannel(channel LogPartsChannel) {
 }
 
 // Syslog entry receiver
-func (h *ChannelHandler) Handle(line []byte, logParts format.LogParts, messageLength int64, err error) {
+func (h *ChannelHandler) Handle(logParts format.LogParts, messageLength int64, err error) {
 	h.channel <- logParts
 }

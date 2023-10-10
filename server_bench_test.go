@@ -36,7 +36,7 @@ type handlerCounter struct {
 	done     chan struct{}
 }
 
-func (s *handlerCounter) Handle(line []byte, logParts format.LogParts, msgLen int64, err error) {
+func (s *handlerCounter) Handle(logParts format.LogParts, msgLen int64, err error) {
 	s.current++
 	if s.current == s.expected {
 		close(s.done)
