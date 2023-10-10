@@ -274,9 +274,8 @@ func (s *Server) parser(line []byte, client string, tlsPeer string) {
 		}
 	}
 	logParts["tls_peer"] = tlsPeer
-	logParts["data"] = string(line)
 
-	s.handler.Handle(logParts, int64(len(line)), err)
+	s.handler.Handle(line, logParts, int64(len(line)), err)
 }
 
 // Returns the last error

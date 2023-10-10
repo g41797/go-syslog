@@ -57,7 +57,7 @@ type HandlerMock struct {
 	LastError         error
 }
 
-func (s *HandlerMock) Handle(logParts format.LogParts, msgLen int64, err error) {
+func (s *HandlerMock) Handle(line []byte, logParts format.LogParts, msgLen int64, err error) {
 	s.LastLogParts = logParts
 	s.LastMessageLength = msgLen
 	s.LastError = err
@@ -296,12 +296,12 @@ type handlerSlow struct {
 	contents []string
 }
 
-func (s *handlerSlow) Handle(logParts format.LogParts, msgLen int64, err error) {
+func (s *handlerSlow) Handle(line []byte, logParts format.LogParts, msgLen int64, err error) {
 	if len(s.contents) == 0 {
 		time.Sleep(time.Second)
 	}
 	s.contents = append(s.contents, logParts["content"].(string))
-	s.handlerCounter.Handle(logParts, msgLen, err)
+	s.handlerCounter.Handle(line, logParts, msgLen, err)
 }
 
 func (s *ServerSuite) TestUDPRace(c *C) {

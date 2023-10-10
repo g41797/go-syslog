@@ -2,9 +2,12 @@ go-syslog
 ==============================
 
 Fork of [Máximo Cuadros go-syslog](https://github.com/mcuadros/go-syslog).
-Added content of former syslog message as "data" property to result:
+
+Changed *Handler* interface- raw syslog message added as first argument to Handle:
 ```go
-	logParts["data"] = string(line)
+type Handler interface {
+	Handle([]byte, format.LogParts, int64, error)
+}
 ```
 
 Syslog server library for go, build easy your custom syslog server over UDP, TCP or Unix sockets using RFC3164, RFC6587 or RFC5424
