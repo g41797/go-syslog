@@ -3,9 +3,9 @@ go-syslog
 
 Fork of [Máximo Cuadros go-syslog](https://github.com/mcuadros/go-syslog).
 
-Changes - raw syslog message ([]byte) was added to logParts:
+Changes - raw syslog message (converted to string) was added to logParts:
 ```go
-    logParts["syslograw"] = line
+    logParts["data"] = string(line)
 ```
 
 Syslog server library for go, build easy your custom syslog server over UDP, TCP or Unix sockets using RFC3164, RFC6587 or RFC5424
