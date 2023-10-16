@@ -22,6 +22,32 @@ var exampleSyslogNoTSTagHost = "<14>INFO     leaving (1) step postscripts"
 var exampleSyslogNoPriority = "Dec 26 05:08:46 hostname test with no priority - see rfc 3164 section 4.3.3"
 var exampleRFC5424Syslog = "<34>1 2003-10-11T22:14:15.003Z mymachine.example.com su - ID47 - 'su root' failed for lonvick on /dev/pts/8"
 
+func newServer() *Server {
+	server := NewServer()
+	server.SetFormat(Automatic)
+	server.SetHandler(new(HandlerMock))
+	return server
+}
+
+func (s *ServerSuite) TestBootKill(c *C) {
+	addr := "127.0.0.1:5141"
+	servers := make([]*Server, 2)
+
+	for i := 0; i < 10; i++ {
+		servers[0] = newServer()
+		servers[1] = newServer()
+		servers[1].SetDatagramChannelSize(1024)
+
+		c.Check(servers[0].ListenTCP(addr), Equals, nil)
+		c.Check(servers[1].ListenUDP(addr), Equals, nil)
+		c.Check(servers[0].Boot(), Equals, nil)
+		c.Check(servers[1].Boot(), Equals, nil)
+		c.Check(servers[0].Kill(), Equals, nil)
+		c.Check(servers[1].Kill(), Equals, nil)
+	}
+
+}
+
 func (s *ServerSuite) TestTailFile(c *C) {
 	handler := new(HandlerMock)
 	server := NewServer()
