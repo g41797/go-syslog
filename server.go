@@ -287,17 +287,19 @@ func (s *Server) GetLastError() error {
 
 // Kill the server
 func (s *Server) Kill() error {
+	var result error
+
 	for _, connection := range s.connections {
 		err := connection.Close()
 		if err != nil {
-			return err
+			result = err
 		}
 	}
 
 	for _, listener := range s.listeners {
 		err := listener.Close()
 		if err != nil {
-			return err
+			result = err
 		}
 	}
 	// Only need to close channel once to broadcast to all waiting
@@ -307,7 +309,7 @@ func (s *Server) Kill() error {
 	if s.datagramChannel != nil {
 		close(s.datagramChannel)
 	}
-	return nil
+	return result
 }
 
 // Waits until the server stops
