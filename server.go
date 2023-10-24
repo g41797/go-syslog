@@ -20,7 +20,7 @@ var (
 )
 
 const (
-	datagramChannelBufferSize = 10
+	datagramChannelBufferSize = 4096
 	datagramReadBufferSize    = 64 * 1024
 )
 
@@ -275,7 +275,10 @@ func (s *Server) parser(line []byte, client string, tlsPeer string) {
 	}
 
 	logParts["tls_peer"] = tlsPeer
-	logParts["data"] = string(line)
+
+	if err != nil {
+		logParts["data"] = string(line)
+	}
 
 	s.handler.Handle(logParts, int64(len(line)), err)
 }
