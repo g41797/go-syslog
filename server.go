@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/g41797/go-syslog/format"
+	reuseudp "github.com/g41797/reuseport"
 )
 
 var (
@@ -20,8 +21,9 @@ var (
 )
 
 const (
-	datagramChannelBufferSize = 4096
+	datagramChannelBufferSize = 1024 * 8
 	datagramReadBufferSize    = 64 * 1024
+	udpReusableConnections    = 8
 )
 
 // A function type which gets the TLS peer name from the connection. Can return
@@ -41,6 +43,7 @@ type Server struct {
 	readTimeoutMilliseconds int64
 	tlsPeerNameFunc         TlsPeerNameFunc
 	datagramPool            sync.Pool
+	udpReusableConnections  int
 }
 
 // NewServer returns a new Server
@@ -51,7 +54,8 @@ func NewServer() *Server {
 		},
 	},
 
-		datagramChannelSize: datagramChannelBufferSize,
+		datagramChannelSize:    datagramChannelBufferSize,
+		udpReusableConnections: udpReusableConnections,
 	}
 }
 
@@ -79,6 +83,14 @@ func (s *Server) SetDatagramChannelSize(size int) {
 	s.datagramChannelSize = size
 }
 
+func (s *Server) SetUdpReusableConnections(n int) {
+	if n <= 0 {
+		return
+	}
+
+	s.udpReusableConnections = n
+}
+
 // Default TLS peer name function - returns the CN of the certificate
 func defaultTlsPeerName(tlsConn *tls.Conn) (tlsPeer string, ok bool) {
 	state := tlsConn.ConnectionState()
@@ -90,19 +102,32 @@ func defaultTlsPeerName(tlsConn *tls.Conn) (tlsPeer string, ok bool) {
 }
 
 // Configure the server for listen on an UDP addr
+// If os supports SO_REUSEPORT, ListenUDP creates
+// udpReusableConnections for the same udp address
+// (see https://lwn.net/Articles/542629/)
 func (s *Server) ListenUDP(addr string) error {
-	udpAddr, err := net.ResolveUDPAddr("udp", addr)
-	if err != nil {
-		return err
+
+	_, reuseport := reuseudp.Available()
+
+	if !reuseport {
+		s.udpReusableConnections = 1
 	}
 
-	connection, err := net.ListenUDP("udp", udpAddr)
-	if err != nil {
-		return err
-	}
-	connection.SetReadBuffer(datagramReadBufferSize)
+	for i := 1; i <= s.udpReusableConnections; i++ {
 
-	s.connections = append(s.connections, connection)
+		lp, err := reuseudp.ListenPacket("udp", addr)
+		if err != nil {
+			return err
+		}
+
+		connection := lp.(*net.UDPConn)
+
+		connection.SetReadBuffer(datagramReadBufferSize)
+
+		s.connections = append(s.connections, connection)
+
+	}
+
 	return nil
 }
 
