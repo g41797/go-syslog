@@ -1,7 +1,7 @@
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
-github.com/g41797/reuseport v0.4.4 h1:u+SmgYKmL5rUT92q0qkWhLEN+thhVmnWNebgZMy4JR8=
-github.com/g41797/reuseport v0.4.4/go.mod h1:YspHTQtcQs/c6t4geFSzo0TN13ZtUY6HOYPMKynuvpU=
+github.com/g41797/reuseport v0.4.5 h1:/cRUOykZ99RWdP2TRsoWtOqZVeR3BtEjD4ZQ6ucCpJ0=
+github.com/g41797/reuseport v0.4.5/go.mod h1:YspHTQtcQs/c6t4geFSzo0TN13ZtUY6HOYPMKynuvpU=
 github.com/kr/pretty v0.2.1/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=
