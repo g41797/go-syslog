@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/g41797/go-syslog/format"
+	"github.com/g41797/kissngoqueue"
 	reuseudp "github.com/g41797/reuseport"
 )
 
@@ -21,9 +22,8 @@ var (
 )
 
 const (
-	datagramChannelBufferSize = 1024 * 8
-	datagramReadBufferSize    = 64 * 1024
-	udpReusableConnections    = 8
+	datagramReadBufferSize = 64 * 1024
+	udpReusableConnections = 8
 )
 
 // A function type which gets the TLS peer name from the connection. Can return
@@ -35,8 +35,8 @@ type Server struct {
 	connections             []net.PacketConn
 	wait                    sync.WaitGroup
 	doneTcp                 chan bool
-	datagramChannelSize     int
-	datagramChannel         chan DatagramMessage
+	datagramQ               *kissngoqueue.Queue[DatagramMessage]
+	nilDM                   DatagramMessage
 	format                  format.Format
 	handler                 Handler
 	lastError               error
@@ -54,8 +54,9 @@ func NewServer() *Server {
 		},
 	},
 
-		datagramChannelSize:    datagramChannelBufferSize,
 		udpReusableConnections: udpReusableConnections,
+		datagramQ:              kissngoqueue.NewQueue[DatagramMessage](),
+		nilDM:                  DatagramMessage{nil, ""},
 	}
 }
 
@@ -77,10 +78,6 @@ func (s *Server) SetTimeout(millseconds int64) {
 // Set the function that extracts a TLS peer name from the TLS connection
 func (s *Server) SetTlsPeerNameFunc(tlsPeerNameFunc TlsPeerNameFunc) {
 	s.tlsPeerNameFunc = tlsPeerNameFunc
-}
-
-func (s *Server) SetDatagramChannelSize(size int) {
-	s.datagramChannelSize = size
 }
 
 func (s *Server) SetUdpReusableConnections(n int) {
@@ -334,9 +331,9 @@ func (s *Server) Kill() error {
 	if s.doneTcp != nil {
 		close(s.doneTcp)
 	}
-	if s.datagramChannel != nil {
-		close(s.datagramChannel)
-	}
+
+	s.datagramQ.CancelMT()
+
 	return result
 }
 
@@ -376,7 +373,7 @@ func (s *Server) goReceiveDatagrams(packetconn net.PacketConn) {
 					if addr != nil {
 						address = addr.String()
 					}
-					s.datagramChannel <- DatagramMessage{buf[:n], address}
+					s.datagramQ.PutMT(DatagramMessage{buf[:n], address})
 				}
 			} else {
 				// there has been an error. Either the server has been killed
@@ -393,26 +390,31 @@ func (s *Server) goReceiveDatagrams(packetconn net.PacketConn) {
 }
 
 func (s *Server) goParseDatagrams() {
-	s.datagramChannel = make(chan DatagramMessage, s.datagramChannelSize)
 
 	s.wait.Add(1)
 	go func() {
 		defer s.wait.Done()
 		for {
-			select {
-			case msg, ok := (<-s.datagramChannel):
-				if !ok {
-					return
-				}
-				if sf := s.format.GetSplitFunc(); sf != nil {
-					if _, token, err := sf(msg.message, true); err == nil {
-						s.parser(token, msg.client, "")
-					}
-				} else {
-					s.parser(msg.message, msg.client, "")
-				}
-				s.datagramPool.Put(msg.message[:cap(msg.message)])
+			msg, ok := s.datagramQ.Get()
+			if !ok {
+				return
 			}
+			if msg.message == nil {
+				return
+			}
+
+			if sf := s.format.GetSplitFunc(); sf != nil {
+				if _, token, err := sf(msg.message, true); err == nil {
+					s.parser(token, msg.client, "")
+				}
+			} else {
+				s.parser(msg.message, msg.client, "")
+			}
+			s.datagramPool.Put(msg.message[:cap(msg.message)])
 		}
 	}()
+}
+
+func (s *Server) closeQ() {
+	s.datagramQ.PutMT(s.nilDM)
 }

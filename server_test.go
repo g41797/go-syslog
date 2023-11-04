@@ -36,7 +36,6 @@ func (s *ServerSuite) TestBootKill(c *C) {
 	for i := 0; i < 10; i++ {
 		servers[0] = newServer()
 		servers[1] = newServer()
-		servers[1].SetDatagramChannelSize(1024)
 
 		c.Check(servers[0].ListenTCP(addr), Equals, nil)
 		c.Check(servers[1].ListenUDP(addr), Equals, nil)
@@ -184,8 +183,8 @@ func (s *ServerSuite) TestUDP3164(c *C) {
 	server.SetHandler(handler)
 	server.SetTimeout(10)
 	server.goParseDatagrams()
-	server.datagramChannel <- DatagramMessage{[]byte(exampleSyslog), "0.0.0.0"}
-	close(server.datagramChannel)
+	server.datagramQ.PutMT(DatagramMessage{[]byte(exampleSyslog), "0.0.0.0"})
+	server.closeQ()
 	server.Wait()
 	c.Check(handler.LastLogParts["hostname"], Equals, "hostname")
 	c.Check(handler.LastLogParts["tag"], Equals, "tag")
@@ -201,8 +200,8 @@ func (s *ServerSuite) TestUDP3164NoTag(c *C) {
 	server.SetHandler(handler)
 	server.SetTimeout(10)
 	server.goParseDatagrams()
-	server.datagramChannel <- DatagramMessage{[]byte(exampleSyslogNoTSTagHost), "127.0.0.1:45789"}
-	close(server.datagramChannel)
+	server.datagramQ.PutMT(DatagramMessage{[]byte(exampleSyslogNoTSTagHost), "127.0.0.1:45789"})
+	server.closeQ()
 	server.Wait()
 	c.Check(handler.LastLogParts["hostname"], Equals, "127.0.0.1")
 	c.Check(handler.LastLogParts["tag"], Equals, "")
@@ -218,8 +217,8 @@ func (s *ServerSuite) TestUDPAutomatic3164NoPriority(c *C) {
 	server.SetHandler(handler)
 	server.SetTimeout(10)
 	server.goParseDatagrams()
-	server.datagramChannel <- DatagramMessage{[]byte(exampleSyslogNoPriority), "127.0.0.1:45789"}
-	close(server.datagramChannel)
+	server.datagramQ.PutMT(DatagramMessage{[]byte(exampleSyslogNoPriority), "127.0.0.1:45789"})
+	server.closeQ()
 	server.Wait()
 	c.Check(handler.LastLogParts["hostname"], Equals, "127.0.0.1")
 	c.Check(handler.LastLogParts["tag"], Equals, "")
@@ -237,8 +236,8 @@ func (s *ServerSuite) TestUDP6587(c *C) {
 	server.SetTimeout(10)
 	server.goParseDatagrams()
 	framedSyslog := []byte(fmt.Sprintf("%d %s", len(exampleRFC5424Syslog), exampleRFC5424Syslog))
-	server.datagramChannel <- DatagramMessage{[]byte(framedSyslog), "0.0.0.0"}
-	close(server.datagramChannel)
+	server.datagramQ.PutMT(DatagramMessage{[]byte(framedSyslog), "0.0.0.0"})
+	server.closeQ()
 	server.Wait()
 	c.Check(handler.LastLogParts["hostname"], Equals, "mymachine.example.com")
 	c.Check(handler.LastLogParts["facility"], Equals, 4)
@@ -254,8 +253,8 @@ func (s *ServerSuite) TestUDPAutomatic3164(c *C) {
 	server.SetHandler(handler)
 	server.SetTimeout(10)
 	server.goParseDatagrams()
-	server.datagramChannel <- DatagramMessage{[]byte(exampleSyslog), "0.0.0.0"}
-	close(server.datagramChannel)
+	server.datagramQ.PutMT(DatagramMessage{[]byte(exampleSyslog), "0.0.0.0"})
+	server.closeQ()
 	server.Wait()
 	c.Check(handler.LastLogParts["hostname"], Equals, "hostname")
 	c.Check(handler.LastLogParts["tag"], Equals, "tag")
@@ -271,8 +270,8 @@ func (s *ServerSuite) TestUDPAutomatic5424(c *C) {
 	server.SetHandler(handler)
 	server.SetTimeout(10)
 	server.goParseDatagrams()
-	server.datagramChannel <- DatagramMessage{[]byte(exampleRFC5424Syslog), "0.0.0.0"}
-	close(server.datagramChannel)
+	server.datagramQ.PutMT(DatagramMessage{[]byte(exampleRFC5424Syslog), "0.0.0.0"})
+	server.closeQ()
 	server.Wait()
 	c.Check(handler.LastLogParts["hostname"], Equals, "mymachine.example.com")
 	c.Check(handler.LastLogParts["facility"], Equals, 4)
@@ -289,8 +288,8 @@ func (s *ServerSuite) TestUDPAutomatic3164Plus6587OctetCount(c *C) {
 	server.SetTimeout(10)
 	server.goParseDatagrams()
 	framedSyslog := []byte(fmt.Sprintf("%d %s", len(exampleSyslog), exampleSyslog))
-	server.datagramChannel <- DatagramMessage{[]byte(framedSyslog), "0.0.0.0"}
-	close(server.datagramChannel)
+	server.datagramQ.PutMT(DatagramMessage{[]byte(framedSyslog), "0.0.0.0"})
+	server.closeQ()
 	server.Wait()
 	c.Check(handler.LastLogParts["hostname"], Equals, "hostname")
 	c.Check(handler.LastLogParts["tag"], Equals, "tag")
@@ -307,8 +306,8 @@ func (s *ServerSuite) TestUDPAutomatic5424Plus6587OctetCount(c *C) {
 	server.SetTimeout(10)
 	server.goParseDatagrams()
 	framedSyslog := []byte(fmt.Sprintf("%d %s", len(exampleRFC5424Syslog), exampleRFC5424Syslog))
-	server.datagramChannel <- DatagramMessage{[]byte(framedSyslog), "0.0.0.0"}
-	close(server.datagramChannel)
+	server.datagramQ.PutMT(DatagramMessage{[]byte(framedSyslog), "0.0.0.0"})
+	server.closeQ()
 	server.Wait()
 	c.Check(handler.LastLogParts["hostname"], Equals, "mymachine.example.com")
 	c.Check(handler.LastLogParts["facility"], Equals, 4)
