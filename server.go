@@ -43,7 +43,6 @@ type Server struct {
 	readTimeoutMilliseconds int64
 	tlsPeerNameFunc         TlsPeerNameFunc
 	datagramPool            sync.Pool
-	udpReusableConnections  int
 }
 
 // NewServer returns a new Server
@@ -53,10 +52,8 @@ func NewServer() *Server {
 			return make([]byte, 65536)
 		},
 	},
-
-		udpReusableConnections: udpReusableConnections,
-		datagramQ:              kissngoqueue.NewQueue[DatagramMessage](),
-		nilDM:                  DatagramMessage{nil, ""},
+		datagramQ: kissngoqueue.NewQueue[DatagramMessage](),
+		nilDM:     DatagramMessage{nil, ""},
 	}
 }
 
@@ -80,14 +77,6 @@ func (s *Server) SetTlsPeerNameFunc(tlsPeerNameFunc TlsPeerNameFunc) {
 	s.tlsPeerNameFunc = tlsPeerNameFunc
 }
 
-func (s *Server) SetUdpReusableConnections(n int) {
-	if n <= 0 {
-		return
-	}
-
-	s.udpReusableConnections = n
-}
-
 // Default TLS peer name function - returns the CN of the certificate
 func defaultTlsPeerName(tlsConn *tls.Conn) (tlsPeer string, ok bool) {
 	state := tlsConn.ConnectionState()
@@ -98,32 +87,27 @@ func defaultTlsPeerName(tlsConn *tls.Conn) (tlsPeer string, ok bool) {
 	return cn, true
 }
 
+func (s *Server) IsUDPReusable() bool {
+	_, reuseport := reuseudp.Available()
+	return reuseport
+}
+
 // Configure the server for listen on an UDP addr
 // If os supports SO_REUSEPORT, ListenUDP creates
 // udpReusableConnections for the same udp address
 // (see https://lwn.net/Articles/542629/)
 func (s *Server) ListenUDP(addr string) error {
 
-	_, reuseport := reuseudp.Available()
-
-	if !reuseport {
-		s.udpReusableConnections = 1
+	lp, err := reuseudp.ListenPacket("udp", addr)
+	if err != nil {
+		return err
 	}
 
-	for i := 1; i <= s.udpReusableConnections; i++ {
+	connection := lp.(*net.UDPConn)
 
-		lp, err := reuseudp.ListenPacket("udp", addr)
-		if err != nil {
-			return err
-		}
+	connection.SetReadBuffer(datagramReadBufferSize)
 
-		connection := lp.(*net.UDPConn)
-
-		connection.SetReadBuffer(datagramReadBufferSize)
-
-		s.connections = append(s.connections, connection)
-
-	}
+	s.connections = append(s.connections, connection)
 
 	return nil
 }
